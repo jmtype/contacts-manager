@@ -76,7 +76,7 @@ export default function App() {
         <SearchInput value={query} onChange={setQuery} inputRef={searchRef} />
 
         {contacts.length === 0 ? (
-          <p className="empty-state">No contacts yet — add your first one using the form above.</p>
+          <p className="empty-state">No contacts yet. Add your first one using the form above.</p>
         ) : visibleContacts.length === 0 ? (
           <p className="empty-state">No contacts match “{query}”.</p>
         ) : (

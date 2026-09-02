@@ -323,6 +323,58 @@ describe('searching', () => {
   })
 })
 
+describe('copy', () => {
+  /** Dash-free so any dash found must have come from the app's own copy. */
+  const plain: Contact = {
+    id: 'p',
+    firstName: 'Alice',
+    email: 'alice@example.com',
+    phone: '+1 555 111 2222',
+  }
+  const DASHES = /[-\u2010\u2011\u2012\u2013\u2014\u2212]/
+
+  const visibleText = () => document.body.textContent ?? ''
+
+  it('uses no dashes anywhere in the resting UI', () => {
+    seed([plain])
+    render(<App />)
+    expect(visibleText()).not.toMatch(DASHES)
+  })
+
+  it('uses no dashes in the empty state', () => {
+    render(<App />)
+    expect(visibleText()).not.toMatch(DASHES)
+  })
+
+  it('uses no dashes in validation messages', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByLabelText(/email/i), 'nope')
+    await user.type(screen.getByLabelText(/phone/i), '123')
+    await user.click(screen.getByRole('button', { name: /add contact/i }))
+
+    expect(visibleText()).not.toMatch(DASHES)
+  })
+
+  it('uses no dashes in edit mode, the delete dialog, or the search miss', async () => {
+    const user = userEvent.setup()
+    seed([plain])
+    render(<App />)
+
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /edit/i }))
+    expect(visibleText()).not.toMatch(DASHES)
+
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /delete/i }))
+    await screen.findByRole('dialog')
+    expect(visibleText()).not.toMatch(DASHES)
+
+    await user.keyboard('{Escape}')
+    await user.type(screen.getByRole('searchbox', { name: /search/i }), 'zzzz')
+    expect(visibleText()).not.toMatch(DASHES)
+  })
+})
+
 describe('validation', () => {
   it('shows no errors before the first submit attempt', async () => {
     const user = userEvent.setup()
