@@ -24,8 +24,8 @@ npm run dev
 
 ## Layout
 
-- `src/lib/` — pure contact logic: validation, uniqueness, sort, filter, storage
-- `src/hooks/` — `useLocalStorage`
+- `src/lib/` — pure contact logic: validation, uniqueness, sort, filter, parsing
+- `src/hooks/` — `useLocalStorage`, which owns the startup read and the persist-on-change write
 - `src/components/` — form, table, search, modal, confirm dialog, toast
 - `src/App.tsx` — owns the contacts array, edit mode, and the delete flow
 

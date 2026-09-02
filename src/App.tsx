@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { ContactForm } from './components/ContactForm'
 import { ContactTable } from './components/ContactTable'
@@ -6,26 +6,30 @@ import { SearchInput } from './components/SearchInput'
 import { Toast } from './components/Toast'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { filterContacts, isEmailTaken, sortContactsByEmail } from './lib/contacts'
-import { readContacts, writeContacts } from './lib/storage'
+import { parseContacts, STORAGE_KEY } from './lib/storage'
 import type { Contact, ContactDraft, ValidationErrors } from './lib/types'
 
 type ToastMessage = { id: number; text: string }
 
+let nextToastId = 0
+
 export default function App() {
-  const [contacts, setContacts] = useLocalStorage<Contact[]>(readContacts, writeContacts)
+  const [contacts, setContacts] = useLocalStorage<Contact[]>(STORAGE_KEY, parseContacts)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [pendingDeletion, setPendingDeletion] = useState<Contact | null>(null)
   const [query, setQuery] = useState('')
   const [toast, setToast] = useState<ToastMessage | null>(null)
+  /** Where focus lands when confirming a delete unmounts the button that opened the dialog. */
+  const searchRef = useRef<HTMLInputElement>(null)
 
   const editing = contacts.find((contact) => contact.id === editingId) ?? null
 
-  const visible = useMemo(
+  const visibleContacts = useMemo(
     () => filterContacts(sortContactsByEmail(contacts), query),
     [contacts, query],
   )
 
-  const announce = (text: string) => setToast({ id: Date.now(), text })
+  const announce = (text: string) => setToast({ id: (nextToastId += 1), text })
   const dismissToast = useCallback(() => setToast(null), [])
 
   const handleSubmit = (draft: ContactDraft): ValidationErrors => {
@@ -69,15 +73,15 @@ export default function App() {
       />
 
       <section className="card">
-        <SearchInput value={query} onChange={setQuery} />
+        <SearchInput value={query} onChange={setQuery} inputRef={searchRef} />
 
         {contacts.length === 0 ? (
           <p className="empty-state">No contacts yet — add your first one using the form above.</p>
-        ) : visible.length === 0 ? (
+        ) : visibleContacts.length === 0 ? (
           <p className="empty-state">No contacts match “{query}”.</p>
         ) : (
           <ContactTable
-            contacts={visible}
+            contacts={visibleContacts}
             editingId={editingId}
             onEdit={(contact) => setEditingId(contact.id)}
             onDelete={setPendingDeletion}
@@ -90,6 +94,7 @@ export default function App() {
           contact={pendingDeletion}
           onConfirm={confirmDeletion}
           onCancel={() => setPendingDeletion(null)}
+          fallbackFocus={() => searchRef.current}
         />
       )}
 

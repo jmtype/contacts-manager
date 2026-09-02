@@ -1,18 +1,31 @@
 import { useEffect, useState } from 'react'
 
 /**
- * `useState` that reads its initial value from localStorage once at startup and
- * writes the current value back on every change.
+ * `useState` backed by a localStorage key: read once at startup, written back on
+ * every change. `parse` narrows whatever was stored, and is also the fallback —
+ * it receives `undefined` when the key is absent, unreadable, or not JSON, so a
+ * corrupted store cannot brick the app.
  */
 export function useLocalStorage<T>(
-  read: () => T,
-  write: (value: T) => void,
+  key: string,
+  parse: (stored: unknown) => T,
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [value, setValue] = useState<T>(read)
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const raw = localStorage.getItem(key)
+      return parse(raw === null ? undefined : JSON.parse(raw))
+    } catch {
+      return parse(undefined)
+    }
+  })
 
   useEffect(() => {
-    write(value)
-  }, [value, write])
+    try {
+      localStorage.setItem(key, JSON.stringify(value))
+    } catch {
+      // Persistence is best-effort; the in-memory value stays authoritative.
+    }
+  }, [key, value])
 
   return [value, setValue]
 }

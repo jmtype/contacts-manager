@@ -1,9 +1,12 @@
+import type { RefObject } from 'react'
+
 type SearchInputProps = {
   value: string
   onChange: (value: string) => void
+  inputRef?: RefObject<HTMLInputElement | null>
 }
 
-export function SearchInput({ value, onChange }: SearchInputProps) {
+export function SearchInput({ value, onChange, inputRef }: SearchInputProps) {
   return (
     <div className="search">
       <label className="search-label" htmlFor="contact-search">
@@ -11,6 +14,7 @@ export function SearchInput({ value, onChange }: SearchInputProps) {
       </label>
       <input
         id="contact-search"
+        ref={inputRef}
         type="search"
         className="input"
         placeholder="Search by name, email, or phone"

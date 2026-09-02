@@ -248,6 +248,18 @@ describe('deleting a contact', () => {
     await user.keyboard('{Escape}')
     expect(deleteButton).toHaveFocus()
   })
+
+  it('keeps focus in the app when confirming removes the triggering button', async () => {
+    const user = userEvent.setup()
+    seed([alice, bob])
+    render(<App />)
+
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /delete/i }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: /^delete$/i }))
+
+    expect(screen.getByRole('searchbox', { name: /search/i })).toHaveFocus()
+  })
 })
 
 describe('searching', () => {

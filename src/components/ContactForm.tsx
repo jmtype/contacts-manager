@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { validateContact } from '../lib/contacts'
+import { normalizeDraft, validateContact } from '../lib/contacts'
 import type { Contact, ContactDraft, ValidationErrors } from '../lib/types'
 
 const EMPTY_DRAFT: ContactDraft = { firstName: '', email: '', phone: '' }
@@ -45,13 +45,9 @@ export function ContactForm({ editing, onSubmit, onCancelEdit }: ContactFormProp
 
     if (Object.keys(validateContact(values)).length > 0) return
 
-    const rejected = onSubmit({
-      firstName: values.firstName.trim(),
-      email: values.email.trim(),
-      phone: values.phone.trim(),
-    })
-    if (Object.keys(rejected).length > 0) {
-      setSubmitErrors(rejected)
+    const rejection = onSubmit(normalizeDraft(values))
+    if (Object.keys(rejection).length > 0) {
+      setSubmitErrors(rejection)
       return
     }
 

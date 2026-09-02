@@ -4,6 +4,11 @@ import { createPortal } from 'react-dom'
 type ModalProps = {
   titleId: string
   onClose: () => void
+  /**
+   * Where to send focus if the element that opened the modal is gone by the
+   * time it closes — as happens when confirming a delete removes its own row.
+   */
+  fallbackFocus?: () => HTMLElement | null
   children: ReactNode
 }
 
@@ -15,7 +20,7 @@ const FOCUSABLE =
  * traps and restores focus, closes on Escape or a backdrop click, and locks
  * background scrolling while open. Rendering it is what opens it.
  */
-export function Modal({ titleId, onClose, children }: ModalProps) {
+export function Modal({ titleId, onClose, fallbackFocus, children }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -53,9 +58,10 @@ export function Modal({ titleId, onClose, children }: ModalProps) {
     return () => {
       document.removeEventListener('keydown', onKeyDown, true)
       document.body.style.overflow = originalOverflow
-      previouslyFocused?.focus()
+      const restoreTo = previouslyFocused?.isConnected ? previouslyFocused : fallbackFocus?.()
+      restoreTo?.focus()
     }
-  }, [onClose])
+  }, [onClose, fallbackFocus])
 
   return createPortal(
     <div className="modal-backdrop" onMouseDown={onClose}>

@@ -14,27 +14,8 @@ function isContact(value: unknown): value is Contact {
   )
 }
 
-/**
- * Reads the stored contacts, falling back to an empty list on any access,
- * parse, or shape failure so corrupted storage cannot brick the app.
- */
-export function readContacts(): Contact[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw === null) return []
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter(isContact)
-  } catch {
-    return []
-  }
-}
-
-/** Writes the contacts, ignoring failures such as a full or blocked store. */
-export function writeContacts(contacts: Contact[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts))
-  } catch {
-    // Persistence is best-effort; the in-memory list stays authoritative.
-  }
+/** Narrows already-parsed JSON to contacts, discarding anything malformed. */
+export function parseContacts(value: unknown): Contact[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(isContact)
 }

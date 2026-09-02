@@ -5,12 +5,13 @@ type ConfirmDialogProps = {
   contact: Contact
   onConfirm: () => void
   onCancel: () => void
+  fallbackFocus?: () => HTMLElement | null
 }
 
 /** The delete-specific composition of {@link Modal}. */
-export function ConfirmDialog({ contact, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ contact, onConfirm, onCancel, fallbackFocus }: ConfirmDialogProps) {
   return (
-    <Modal titleId="confirm-delete-title" onClose={onCancel}>
+    <Modal titleId="confirm-delete-title" onClose={onCancel} fallbackFocus={fallbackFocus}>
       <h2 id="confirm-delete-title" className="modal-title">
         Delete contact?
       </h2>

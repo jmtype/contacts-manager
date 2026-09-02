@@ -7,6 +7,20 @@ export const PHONE_MAX_DIGITS = 15
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[^\s@.]+(?:\.[^\s@.]+)*\.[A-Za-z]{2,}$/
 const PHONE_PATTERN = /^\+?[\d\s\-()]+$/
 
+/** Emails are compared case-insensitively and ignoring surrounding space. */
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+/** Strips surrounding whitespace from every field of a draft. */
+export function normalizeDraft(draft: ContactDraft): ContactDraft {
+  return {
+    firstName: draft.firstName.trim(),
+    email: draft.email.trim(),
+    phone: draft.phone.trim(),
+  }
+}
+
 /**
  * Checks a candidate contact's fields against the shape rules and returns one
  * message per offending field. An empty object means the draft is valid.
@@ -14,22 +28,20 @@ const PHONE_PATTERN = /^\+?[\d\s\-()]+$/
  */
 export function validateContact(draft: ContactDraft): ValidationErrors {
   const errors: ValidationErrors = {}
+  const { firstName, email, phone } = normalizeDraft(draft)
 
-  const firstName = draft.firstName.trim()
   if (firstName === '') {
     errors.firstName = 'First name is required'
   } else if (firstName.length > FIRST_NAME_MAX_LENGTH) {
     errors.firstName = `First name must be ${FIRST_NAME_MAX_LENGTH} characters or fewer`
   }
 
-  const email = draft.email.trim()
   if (email === '') {
     errors.email = 'Email is required'
   } else if (!EMAIL_PATTERN.test(email)) {
     errors.email = 'Enter a valid email address'
   }
 
-  const phone = draft.phone.trim()
   const digitCount = phone.replace(/\D/g, '').length
   if (phone === '') {
     errors.phone = 'Phone is required'
@@ -48,15 +60,13 @@ export function validateContact(draft: ContactDraft): ValidationErrors {
  * does not collide with itself.
  */
 export function isEmailTaken(email: string, contacts: Contact[], ignoreId?: string): boolean {
-  const needle = email.trim().toLowerCase()
-  return contacts.some((c) => c.id !== ignoreId && c.email.trim().toLowerCase() === needle)
+  const needle = normalizeEmail(email)
+  return contacts.some((c) => c.id !== ignoreId && normalizeEmail(c.email) === needle)
 }
 
 /** Case-insensitive ascending sort by email. Returns a new array. */
 export function sortContactsByEmail(contacts: Contact[]): Contact[] {
-  return [...contacts].sort((a, b) =>
-    a.email.toLowerCase().localeCompare(b.email.toLowerCase()),
-  )
+  return [...contacts].sort((a, b) => normalizeEmail(a.email).localeCompare(normalizeEmail(b.email)))
 }
 
 /**
