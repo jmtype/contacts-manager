@@ -7,7 +7,7 @@
   --text-muted: #61697a;
   --accent: #4f46e5;
   --accent-contrast: #ffffff;
-  --accent-soft: #eef0ff;
+  --accent-tint: color-mix(in srgb, var(--accent) 7%, var(--surface));
   --danger: #d92d20;
   --danger-soft: #fdecea;
   --radius: 14px;
@@ -32,7 +32,7 @@
     --text-muted: #9aa3b5;
     --accent: #8b85ff;
     --accent-contrast: #14181f;
-    --accent-soft: #232445;
+    --accent-tint: color-mix(in srgb, var(--accent) 13%, var(--surface));
     --danger: #ff6b5e;
     --danger-soft: #35201f;
     --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 10px 30px rgb(0 0 0 / 35%);
@@ -274,13 +274,48 @@ body {
   border-bottom: none;
 }
 
-.contact-table tbody tr:hover td {
+.contact-table tbody tr:not(.row-editing):hover td {
   background: var(--surface-alt);
 }
 
+/* The edited row: one accent rail down the left of the row (not per cell), a
+   soft tint, and a badge — so the state reads without relying on colour alone. */
+.contact-table tbody tr td {
+  transition: background 140ms ease;
+}
+
 .row-editing td {
-  background: var(--accent-soft) !important;
+  background: var(--accent-tint);
+  border-bottom-color: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.row-editing td:first-child {
   box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.row-editing .row-actions .button:first-child {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: transparent;
+}
+
+.name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.editing-badge {
+  font-size: 0.66rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1.7;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
 .row-actions {

@@ -144,6 +144,23 @@ describe('editing a contact', () => {
     expect(screen.getByRole('button', { name: /add contact/i })).toBeInTheDocument()
   })
 
+  it('marks the row bound to the form and unmarks it when the edit ends', async () => {
+    const user = userEvent.setup()
+    seed([alice, bob])
+    render(<App />)
+
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /edit/i }))
+
+    expect(rowFor('Alice')).toHaveAttribute('aria-current', 'true')
+    expect(within(rowFor('Alice')).getByText(/editing/i)).toBeInTheDocument()
+    expect(rowFor('Bob')).not.toHaveAttribute('aria-current')
+
+    await user.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    expect(rowFor('Alice')).not.toHaveAttribute('aria-current')
+    expect(screen.queryByText(/^editing$/i)).not.toBeInTheDocument()
+  })
+
   it('allows saving an edit that leaves the email unchanged', async () => {
     const user = userEvent.setup()
     seed([alice, bob])
