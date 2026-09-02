@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type RefObject } from 'react'
 import { normalizeDraft, validateContact } from '../lib/contacts'
 import type { Contact, ContactDraft, ValidationErrors } from '../lib/types'
 
@@ -14,6 +14,8 @@ type ContactFormProps = {
   /** Persists the draft; returns any errors the form alone cannot detect. */
   onSubmit: (draft: ContactDraft) => ValidationErrors
   onCancelEdit: () => void
+  /** Lets `App` return focus here once a submit has landed. */
+  firstFieldRef?: RefObject<HTMLInputElement | null>
 }
 
 const FIELDS = [
@@ -22,7 +24,7 @@ const FIELDS = [
   { name: 'phone', label: 'Phone', type: 'text', autoComplete: 'tel' },
 ] as const
 
-export function ContactForm({ editing, onSubmit, onCancelEdit }: ContactFormProps) {
+export function ContactForm({ editing, onSubmit, onCancelEdit, firstFieldRef }: ContactFormProps) {
   const [values, setValues] = useState<ContactDraft>(() =>
     editing ? { firstName: editing.firstName, email: editing.email, phone: editing.phone } : EMPTY_DRAFT,
   )
@@ -71,6 +73,7 @@ export function ContactForm({ editing, onSubmit, onCancelEdit }: ContactFormProp
               <input
                 id={field.name}
                 name={field.name}
+                ref={field.name === 'firstName' ? firstFieldRef : undefined}
                 type={field.type}
                 autoComplete={field.autoComplete}
                 className={error ? 'input input-invalid' : 'input'}

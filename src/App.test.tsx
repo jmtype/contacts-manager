@@ -75,6 +75,66 @@ describe('adding a contact', () => {
   })
 })
 
+describe('focus after submitting the form', () => {
+  const firstNameInput = () => screen.getByLabelText(/first name/i)
+
+  it('returns focus to the first field when Enter adds a contact', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await fillForm(user, { firstName: 'Alice', email: 'alice@example.com', phone: '5551112222' })
+    await user.keyboard('{Enter}')
+
+    expect(rowFor('Alice')).toBeInTheDocument()
+    expect(firstNameInput()).toHaveFocus()
+  })
+
+  it('returns focus to the first field when the add button adds a contact', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await fillForm(user, { firstName: 'Alice', email: 'alice@example.com', phone: '5551112222' })
+    await user.click(screen.getByRole('button', { name: /add contact/i }))
+
+    expect(firstNameInput()).toHaveFocus()
+  })
+
+  it('leaves focus alone when a failed submit adds nothing', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const addButton = screen.getByRole('button', { name: /add contact/i })
+    await user.click(addButton)
+
+    expect(addButton).toHaveFocus()
+    expect(firstNameInput()).not.toHaveFocus()
+  })
+
+  it('returns focus to the first field after an update, which remounts the form', async () => {
+    const user = userEvent.setup()
+    seed([alice])
+    render(<App />)
+
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /edit/i }))
+    await user.clear(firstNameInput())
+    await user.type(firstNameInput(), 'Alicia')
+    await user.click(screen.getByRole('button', { name: /update contact/i }))
+
+    expect(firstNameInput()).toHaveFocus()
+  })
+
+  it('returns focus to the first field after cancelling an edit', async () => {
+    const user = userEvent.setup()
+    seed([alice])
+    render(<App />)
+
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /edit/i }))
+    await user.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    expect(firstNameInput()).toHaveFocus()
+  })
+})
+
 describe('startup', () => {
   it('shows a friendly empty message when there is nothing stored', () => {
     render(<App />)

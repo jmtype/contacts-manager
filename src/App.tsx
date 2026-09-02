@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { ContactForm } from './components/ContactForm'
 import { ContactTable } from './components/ContactTable'
@@ -21,6 +21,20 @@ export default function App() {
   const [toast, setToast] = useState<ToastMessage | null>(null)
   /** Where focus lands when confirming a delete unmounts the button that opened the dialog. */
   const searchRef = useRef<HTMLInputElement>(null)
+  const firstFieldRef = useRef<HTMLInputElement>(null)
+  /**
+   * Bumped whenever the form is done with, so focus returns to its first field
+   * ready for the next contact. A counter rather than a boolean because leaving
+   * edit mode remounts the form, and focus has to wait for the new node.
+   */
+  const [formFocusRequest, setFormFocusRequest] = useState(0)
+
+  useEffect(() => {
+    if (formFocusRequest === 0) return
+    firstFieldRef.current?.focus()
+  }, [formFocusRequest])
+
+  const returnFocusToForm = () => setFormFocusRequest((count) => count + 1)
 
   const editing = contacts.find((contact) => contact.id === editingId) ?? null
 
@@ -47,6 +61,7 @@ export default function App() {
       setContacts((current) => [...current, { id: crypto.randomUUID(), ...draft }])
       announce('Contact added')
     }
+    returnFocusToForm()
     return {}
   }
 
@@ -68,8 +83,12 @@ export default function App() {
       <ContactForm
         key={editingId ?? 'new'}
         editing={editing}
+        firstFieldRef={firstFieldRef}
         onSubmit={handleSubmit}
-        onCancelEdit={() => setEditingId(null)}
+        onCancelEdit={() => {
+          setEditingId(null)
+          returnFocusToForm()
+        }}
       />
 
       <section className="card">
