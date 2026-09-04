@@ -4,6 +4,18 @@ export const FIRST_NAME_MAX_LENGTH = 50
 export const PHONE_MIN_DIGITS = 7
 export const PHONE_MAX_DIGITS = 15
 
+/**
+ * The Sample Contact: illustrative field values shown whenever the form is
+ * starting over with no contact to edit, so it is never visually blank. Chosen
+ * to pass `validateContact` and to read as an obvious example rather than as
+ * someone's real data — `example.com` is reserved for exactly this by RFC 2606.
+ */
+export const DEFAULT_DRAFT: ContactDraft = {
+  firstName: 'Jane',
+  email: 'jane.doe@example.com',
+  phone: '+34 600 123 456',
+}
+
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[^\s@.]+(?:\.[^\s@.]+)*\.[A-Za-z]{2,}$/
 const PHONE_PATTERN = /^\+?[\d\s\-()]+$/
 

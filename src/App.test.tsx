@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from './App'
+import { DEFAULT_DRAFT } from './lib/contacts'
 import { STORAGE_KEY } from './lib/storage'
 import type { Contact } from './lib/types'
 
@@ -29,6 +30,13 @@ const fillForm = async (
   await user.type(screen.getByLabelText(/phone/i), values.phone)
 }
 
+/** Empties the form of its Sample Contact, for tests that need an invalid draft. */
+const clearForm = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.clear(screen.getByLabelText(/first name/i))
+  await user.clear(screen.getByLabelText(/email/i))
+  await user.clear(screen.getByLabelText(/phone/i))
+}
+
 const rowFor = (name: string) => screen.getByRole('row', { name: new RegExp(name, 'i') })
 
 describe('adding a contact', () => {
@@ -47,9 +55,9 @@ describe('adding a contact', () => {
     expect(within(row).getByText('alice@example.com')).toBeInTheDocument()
     expect(within(row).getByText('+1 555 111 2222')).toBeInTheDocument()
 
-    expect(screen.getByLabelText(/first name/i)).toHaveValue('')
-    expect(screen.getByLabelText(/email/i)).toHaveValue('')
-    expect(screen.getByLabelText(/phone/i)).toHaveValue('')
+    expect(screen.getByLabelText(/first name/i)).toHaveValue(DEFAULT_DRAFT.firstName)
+    expect(screen.getByLabelText(/email/i)).toHaveValue(DEFAULT_DRAFT.email)
+    expect(screen.getByLabelText(/phone/i)).toHaveValue(DEFAULT_DRAFT.phone)
   })
 
   it('confirms the addition with a message', async () => {
@@ -103,6 +111,7 @@ describe('focus after submitting the form', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await clearForm(user)
     const addButton = screen.getByRole('button', { name: /add contact/i })
     await user.click(addButton)
 
@@ -261,7 +270,7 @@ describe('editing a contact', () => {
 
     expect(rowFor('Alice')).toBeInTheDocument()
     expect(screen.queryByText('Changed')).not.toBeInTheDocument()
-    expect(screen.getByLabelText(/first name/i)).toHaveValue('')
+    expect(screen.getByLabelText(/first name/i)).toHaveValue(DEFAULT_DRAFT.firstName)
     expect(screen.getByRole('button', { name: /add contact/i })).toBeInTheDocument()
   })
 })
@@ -450,6 +459,7 @@ describe('validation', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await clearForm(user)
     await user.type(screen.getByLabelText(/email/i), 'not-an-email')
     await user.click(screen.getByRole('button', { name: /add contact/i }))
 
@@ -463,6 +473,7 @@ describe('validation', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await clearForm(user)
     await user.click(screen.getByRole('button', { name: /add contact/i }))
     expect(screen.getByText(/first name is required/i)).toBeInTheDocument()
 
@@ -481,5 +492,100 @@ describe('validation', () => {
 
     expect(screen.getByText(/already exists/i)).toBeInTheDocument()
     expect(screen.queryByRole('row', { name: /impostor/i })).not.toBeInTheDocument()
+  })
+})
+
+describe('the sample contact', () => {
+  const seed = (contacts: Contact[]) =>
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts))
+
+  const expectSampleShown = () => {
+    expect(screen.getByLabelText(/first name/i)).toHaveValue(DEFAULT_DRAFT.firstName)
+    expect(screen.getByLabelText(/email/i)).toHaveValue(DEFAULT_DRAFT.email)
+    expect(screen.getByLabelText(/phone/i)).toHaveValue(DEFAULT_DRAFT.phone)
+  }
+
+  it('fills the form on first mount', () => {
+    render(<App />)
+    expectSampleShown()
+  })
+
+  it('fills the form after cancelling an edit', async () => {
+    const user = userEvent.setup()
+    seed([alice])
+    render(<App />)
+
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /edit/i }))
+    await user.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    expectSampleShown()
+  })
+
+  it('fills the form when the contact being edited is deleted', async () => {
+    const user = userEvent.setup()
+    seed([alice])
+    render(<App />)
+
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /edit/i }))
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /delete/i }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: /^delete$/i }))
+
+    expectSampleShown()
+  })
+
+  it('does not replace the values of a contact being edited', async () => {
+    const user = userEvent.setup()
+    seed([alice])
+    render(<App />)
+
+    await user.click(within(rowFor('Alice')).getByRole('button', { name: /edit/i }))
+
+    expect(screen.getByLabelText(/first name/i)).toHaveValue('Alice')
+    expect(screen.getByLabelText(/email/i)).toHaveValue('alice@example.com')
+  })
+
+  it('is valid, so it submits without being edited', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /add contact/i }))
+
+    const row = rowFor(DEFAULT_DRAFT.firstName)
+    expect(within(row).getByText(DEFAULT_DRAFT.email)).toBeInTheDocument()
+  })
+
+  it('raises no errors until the user submits', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /add contact/i }))
+    expect(screen.queryByText(/already exists/i)).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /add contact/i }))
+    expect(screen.getByText(/already exists/i)).toBeInTheDocument()
+  })
+
+  it('is replaced rather than appended to when the user types', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByLabelText(/first name/i))
+    await user.keyboard('Bob')
+
+    expect(screen.getByLabelText(/first name/i)).toHaveValue('Bob')
+  })
+
+  it('keeps a field the user has already changed', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByLabelText(/first name/i))
+    await user.keyboard('Bob')
+    await user.click(screen.getByLabelText(/email/i))
+    await user.click(screen.getByLabelText(/first name/i))
+    await user.keyboard('by')
+
+    expect(screen.getByLabelText(/first name/i)).toHaveValue('Bobby')
   })
 })

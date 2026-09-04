@@ -1,8 +1,6 @@
 import { useState, type FormEvent, type RefObject } from 'react'
-import { normalizeDraft, validateContact } from '../lib/contacts'
+import { DEFAULT_DRAFT, normalizeDraft, validateContact } from '../lib/contacts'
 import type { Contact, ContactDraft, ValidationErrors } from '../lib/types'
-
-const EMPTY_DRAFT: ContactDraft = { firstName: '', email: '', phone: '' }
 
 /**
  * Remounted by `App` (via `key`) whenever the edited contact changes, so the
@@ -26,7 +24,9 @@ const FIELDS = [
 
 export function ContactForm({ editing, onSubmit, onCancelEdit, firstFieldRef }: ContactFormProps) {
   const [values, setValues] = useState<ContactDraft>(() =>
-    editing ? { firstName: editing.firstName, email: editing.email, phone: editing.phone } : EMPTY_DRAFT,
+    editing
+      ? { firstName: editing.firstName, email: editing.email, phone: editing.phone }
+      : DEFAULT_DRAFT,
   )
   const [submitAttempted, setSubmitAttempted] = useState(false)
   /** Errors raised by the caller (e.g. duplicate email), cleared on edit. */
@@ -41,6 +41,16 @@ export function ContactForm({ editing, onSubmit, onCancelEdit, firstFieldRef }: 
     setSubmitErrors(({ [field]: _cleared, ...rest }) => rest)
   }
 
+  /**
+   * Selects a field still holding its Sample Contact value, so the first
+   * keystroke replaces the sample instead of appending to it. Only while adding:
+   * an edited contact's own values are the user's, however much they look alike.
+   */
+  const handleFocus = (field: keyof ContactDraft, target: HTMLInputElement) => {
+    if (editing || values[field] !== DEFAULT_DRAFT[field]) return
+    target.select()
+  }
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitAttempted(true)
@@ -53,7 +63,7 @@ export function ContactForm({ editing, onSubmit, onCancelEdit, firstFieldRef }: 
       return
     }
 
-    setValues(EMPTY_DRAFT)
+    setValues(DEFAULT_DRAFT)
     setSubmitAttempted(false)
     setSubmitErrors({})
   }
@@ -80,6 +90,7 @@ export function ContactForm({ editing, onSubmit, onCancelEdit, firstFieldRef }: 
                 value={values[field.name]}
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? `${field.name}-error` : undefined}
+                onFocus={(event) => handleFocus(field.name, event.target)}
                 onChange={(event) => handleChange(field.name, event.target.value)}
               />
               {error && (
